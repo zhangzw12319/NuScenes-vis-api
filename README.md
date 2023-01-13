@@ -1,3 +1,23 @@
+# API for NuScenes
+
+This repository is modified based on Semantic-Kitti-API project(https://github.com/PRBonn/semantic-kitti-api) and adpated for nuscenes dataset.
+
+Current Setup Processes(temporary):
+- **Step-1** Prepare NuScenes Dataset
+- **Step-2** Download PKL file from https://pan.baidu.com/s/1vgM20QA9ZbzDMvzKJIoJFQ?pwd=2rlo. Download `nuscenes_pkl` folder, which contains trainval, mini and test split.
+- **Step-3** Can run on Windows(Windows 11 tested). Only need to install pip packages as the following. DO not need to ` sudo apt install python3-dev python3-pip python3-pyqt5.qtopengl` 
+```sh
+$ sudo pip3 install -r requirements.txt
+```
+However, **CANNOT** run on Ubuntu 20.04 and Ubuntu 22.04, due to compatability error of PyQt5 package in Ubuntu. Tryng to fix.
+
+- **Step-4**
+```sh
+$ python visualize_panoptic.py --dataset Path-to-Nuscenes-dataset --pkl_path path/nuscenes_pkl/[trainval|mini|test] \
+--version [v1.0-trainval|v1.0-mini|v1.0-test] --do_instances
+```
+
+
 # API for SemanticKITTI
 
 This repository contains helper scripts to open, visualize, process, and 
