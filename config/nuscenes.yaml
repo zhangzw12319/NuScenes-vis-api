@@ -1,0 +1,122 @@
+labels:
+  0: 'noise'
+  1: 'animal'
+  2: 'human.pedestrian.adult'
+  3: 'human.pedestrian.child'
+  4: 'human.pedestrian.construction_worker'
+  5: 'human.pedestrian.personal_mobility'
+  6: 'human.pedestrian.police_officer'
+  7: 'human.pedestrian.stroller'
+  8: 'human.pedestrian.wheelchair'
+  9: 'movable_object.barrier'
+  10: 'movable_object.debris'
+  11: 'movable_object.pushable_pullable'
+  12: 'movable_object.trafficcone'
+  13: 'static_object.bicycle_rack'
+  14: 'vehicle.bicycle'
+  15: 'vehicle.bus.bendy'
+  16: 'vehicle.bus.rigid'
+  17: 'vehicle.car'
+  18: 'vehicle.construction'
+  19: 'vehicle.emergency.ambulance'
+  20: 'vehicle.emergency.police'
+  21: 'vehicle.motorcycle'
+  22: 'vehicle.trailer'
+  23: 'vehicle.truck'
+  24: 'flat.driveable_surface'
+  25: 'flat.other'
+  26: 'flat.sidewalk'
+  27: 'flat.terrain'
+  28: 'static.manmade'
+  29: 'static.other'
+  30: 'static.vegetation'
+  31: 'vehicle.ego'
+
+color_map_17: # bgr
+  0: [0, 0, 0]        # noise 黑色
+  1: [114, 128, 112]  # barrier 草灰色
+  2: [245, 230, 100]  # bicycle 天蓝色
+  3: [250, 80, 80]    # bus 紫蓝色 # 和semantic-kitti.yaml不同，把R值从100改为80
+  4: [245, 150, 100]  # car 蓝色
+  5: [70, 150, 233]   # construction_vehicle 浅橙色
+  6: [150, 60, 30]    # motorcycle 深蓝色
+  7: [30, 30, 255]    # pedestrian 红色
+  8: [204, 204, 204]  # traffic_cone 锥形交通路标 深青色
+  9: [0, 60, 135]     # trailer 拖车 褐色
+  10: [180, 30, 80]   # truck 深紫色
+  11: [255, 0, 255]   # driveable_surface 粉色
+  12: [75, 0, 175]    # other_flat 紫红色
+  13: [75, 0, 75]     # sidewalk 深紫色
+  14: [80, 240, 150]  # terrain 浅绿色
+  15: [160, 150, 96]  # manmade 青绿色
+  16: [0, 175, 0]     # vegetation 深绿色
+
+labels_17:
+  1: 'barrier'
+  2: 'bicycle'
+  3: 'bus'
+  4: 'car'
+  5: 'construction_vehicle'
+  6: 'motorcycle'
+  7: 'pedestrian'
+  8: 'traffic_cone'
+  9: 'trailer'
+  10: 'truck'
+  11: 'driveable_surface'
+  12: 'other_flat'
+  13: 'sidewalk'
+  14: 'terrain'
+  15: 'manmade'
+  16: 'vegetation'
+  17: 'noise'
+learning_map:
+  1: 0
+  5: 0
+  7: 0
+  8: 0
+  10: 0
+  11: 0
+  13: 0
+  19: 0
+  20: 0
+  0: 0
+  29: 0
+  31: 0
+  9: 1
+  14: 2
+  15: 3
+  16: 3
+  17: 4
+  18: 5
+  21: 6
+  2: 7
+  3: 7
+  4: 7
+  6: 7
+  12: 8
+  22: 9
+  23: 10
+  24: 11
+  25: 12
+  26: 13
+  27: 14
+  28: 15
+  30: 16
+thing_class: # thing class in panoptic segmentation
+  0: False      # "null areas"
+  1: True     # "barrier"
+  2: True     # "bicycle"
+  3: True     # "bus"
+  4: True     # "car"
+  5: True     # "construction_vehicle"
+  6: True     # "motorcycle"
+  7: True     # "pedestrian"
+  8: True     # "traffic_cone"
+  9: True     # "trailer"
+  10: True    # "truck"
+  11: False    # "driveable_surface"
+  12: False    # "other_flat"
+  13: False    # "sidewalk"
+  14: False    # "terrain"
+  15: False    # "manmade"
+  16: False    # "vegetation"
