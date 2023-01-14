@@ -35,20 +35,20 @@ labels:
 color_map_17: # bgr
   0: [0, 0, 0]        # noise 黑色
   1: [114, 128, 112]  # barrier 草灰色
-  2: [245, 230, 100]  # bicycle 天蓝色
-  3: [250, 80, 80]    # bus 紫蓝色 # 和semantic-kitti.yaml不同，把R值从100改为80
+  2: [0, 255, 255]    # bicycle 黄色
+  3: [255, 204, 204]  # bus 淡紫色
   4: [245, 150, 100]  # car 蓝色
-  5: [70, 150, 233]   # construction_vehicle 浅橙色
-  6: [150, 60, 30]    # motorcycle 深蓝色
+  5: [147, 163, 185]  # construction_vehicle 浅棕色
+  6: [0, 192, 255]    # motorcycle 橘色
   7: [30, 30, 255]    # pedestrian 红色
-  8: [204, 204, 204]  # traffic_cone 锥形交通路标 深青色
-  9: [0, 60, 135]     # trailer 拖车 褐色
-  10: [180, 30, 80]   # truck 深紫色
+  8: [0, 204, 204]   # traffic_cone 锥形交通路标 深草绿色
+  9: [102, 255, 204]  # trailer 拖车 浅草绿色
+  10: [102, 153, 255] # truck 肉色
   11: [255, 0, 255]   # driveable_surface 粉色
   12: [75, 0, 175]    # other_flat 紫红色
-  13: [75, 0, 75]     # sidewalk 深紫色
-  14: [80, 240, 150]  # terrain 浅绿色
-  15: [160, 150, 96]  # manmade 青绿色
+  13: [217, 217, 217] # sidewalk 浅灰色
+  14: [51, 102, 153]  # terrain 棕色
+  15: [160, 150, 96]  # manmade 深青绿色
   16: [0, 175, 0]     # vegetation 深绿色
 
 labels_17:

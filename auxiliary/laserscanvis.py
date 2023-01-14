@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 # This file is covered by the LICENSE file in the root of this project.
 
+import copy
 import vispy
 from vispy.scene import visuals, SceneCanvas
 import numpy as np
 from matplotlib import pyplot as plt
+from tqdm import tqdm
 
 
 class LaserScanVis:
@@ -37,6 +39,8 @@ class LaserScanVis:
     self.pred_instances = pred_instances
     self.gt_classwise = gt_classwise
     self.pred_classwise = pred_classwise
+    
+    self.selected_cls = 4
 
     # sanity check
     if not self.gt_semantics and self.gt_instances:
@@ -55,6 +59,8 @@ class LaserScanVis:
     # last key press (it should have a mutex, but visualization is not
     # safety critical, so let's do things wrong)
     self.action = "no"  # no, next, back, quit are the possibilities
+
+    ###############################################################
 
     # new canvas prepared for visualizing data
     self.canvas = SceneCanvas(keys='interactive', show=True)
@@ -119,6 +125,38 @@ class LaserScanVis:
       visuals.XYZAxis(parent=self.pred_inst_view.scene)
       # self.pred_inst_view.camera.link(self.scan_view.camera)
 
+    ###############################################################
+
+    # add another canvas for classwise visualization
+    self.canvas2 = SceneCanvas(keys='interactive', show=True)
+    # interface (n next, b back, q quit, plus 1-16 class)
+    self.canvas2.events.key_press.connect(self.key_press)
+    self.canvas2.events.draw.connect(self.draw)
+    # grid
+    self.grid2 = self.canvas2.central_widget.add_grid()
+    
+    # gt classwise
+    if self.gt_classwise:
+      self.gt_cls_view = vispy.scene.widgets.ViewBox(
+          border_color='white', parent=self.canvas2.scene)
+      self.grid2.add_widget(self.gt_cls_view, 0, 0)
+      self.gt_cls_vis = visuals.Markers()
+      self.gt_cls_view.camera = 'turntable'
+      self.gt_cls_view.add(self.gt_cls_vis)
+      visuals.XYZAxis(parent=self.gt_cls_view.scene)
+    
+    # pred classwise
+    if self.pred_classwise:
+      self.pred_cls_view = vispy.scene.widgets.ViewBox(
+          border_color='white', parent=self.canvas2.scene)
+      self.grid2.add_widget(self.pred_cls_view, 0, 1)
+      self.pred_cls_vis = visuals.Markers()
+      self.pred_cls_view.camera = 'turntable'
+      self.pred_cls_view.add(self.pred_cls_vis)
+      visuals.XYZAxis(parent=self.pred_cls_view.scene)
+
+    ###############################################################
+
     # img canvas size
     self.multiplier = 1
     self.canvas_W = 1024
@@ -181,7 +219,11 @@ class LaserScanVis:
 
     return color_range.reshape(256, 3).astype(np.float32) / 255.0
 
+
   def update_scan(self):
+
+    ###############################################################
+
     if self.gt_semantics:
       assert self.gt_scan is not None
       # first open data
@@ -200,7 +242,8 @@ class LaserScanVis:
                               face_color=self.gt_scan.inst_label_color[..., ::-1],
                               edge_color=self.gt_scan.inst_label_color[..., ::-1],
                               size=1)
-      
+
+    ###############################################################
 
     if self.pred_semantics:
       assert self.pred_scan is not None
@@ -217,13 +260,54 @@ class LaserScanVis:
                               face_color=self.pred_scan.inst_label_color[..., ::-1],
                               edge_color=self.pred_scan.inst_label_color[..., ::-1],
                               size=1)
+    ###############################################################
 
+    if self.gt_classwise:
+      # can be commented out here to save time
+      # first open data
+      # self.gt_scan.open_scan(self.scan_names[self.offset])
+      # self.gt_scan.open_label(self.gt_label_names[self.offset])
+      # self.gt_scan.colorize() 
+      mask = (self.gt_scan.sem_label == self.selected_cls)
+      # print("self.selected_cls", self.selected_cls)
+      # we have limited self.selected_cls range in def key_press
+      if self.selected_cls <=10: 
+        gt_cls_color = self.gt_scan.inst_label_color
+        gt_cls_color[~mask] = np.array([0.1, 0.1, 0.1])
+      else:
+        gt_cls_color = self.gt_scan.sem_label_color
+        gt_cls_color[~mask] = np.array([0.1, 0.1, 0.1])
+      self.gt_cls_vis.set_data(self.gt_scan.points,
+                          face_color=gt_cls_color[..., ::-1],
+                          edge_color=gt_cls_color[..., ::-1],
+                          size=1)
+      
+    if self.pred_classwise:
+      # can be commented out here to save time
+      # first open data
+      # self.gt_scan.open_scan(self.scan_names[self.offset])
+      # self.gt_scan.open_label(self.gt_label_names[self.offset])
+      # self.gt_scan.colorize() 
+      mask = (self.pred_scan.sem_label == self.selected_cls)
+      if self.selected_cls <=10:
+        pred_cls_color = self.pred_scan.inst_label_color
+        pred_cls_color[~mask] = np.array([0.1, 0.1, 0.1])
+      else:
+        pred_cls_color = self.pred_scan.sem_label_color
+        pred_cls_color[~mask] = np.array([0.1, 0.1, 0.1])
+      self.pred_cls_vis.set_data(self.pred_scan.points,
+                          face_color=pred_cls_color[..., ::-1],
+                          edge_color=pred_cls_color[..., ::-1],
+                          size=1)
+
+    ###############################################################
     # then change names
     title = "scan " + str(self.offset)
-    self.canvas.title = title
-    self.img_canvas.title = title
+    self.canvas.title = "Semantic and Instance Visualization:  " + title
+    self.canvas2.title = "Classwise Comparison:  " + title
+    self.img_canvas.title = "Range View:  " + title
 
-    # then do all the point cloud stuff
+    ###############################################################
 
     # plot range view scan
     self.raw_scan.open_scan(self.scan_names[self.offset])
@@ -281,10 +365,25 @@ class LaserScanVis:
       self.update_scan()
     elif event.key == 'Q' or event.key == 'Escape':
       self.destroy()
+    elif event.key in ['1','2','3','4','5','6','7','8','9']:
+      self.selected_cls = int(str(event.key)[6])
+      self.update_scan()
+      print(f"You select class {self.selected_cls}...")
+    elif event.key in ['C','D','E','F','G','H','I']:
+      self.selected_cls = ord(str(event.key)[6]) - ord('C') + 10
+      self.update_scan()
+      print(f"You select class {self.selected_cls}...")
+    elif event.key == 'P':
+      if self.find_nearest_cls():
+        self.update_scan()
+        print(f"You select class {self.selected_cls}...")
 
   def draw(self, event):
     if self.canvas.events.key_press.blocked():
       self.canvas.events.key_press.unblock()
+    if self.canvas2.events.key_press.blocked():
+      self.canvas2.events.key_press.unblock()
+
     if self.img_canvas.events.key_press.blocked():
       self.img_canvas.events.key_press.unblock()
 
@@ -294,5 +393,56 @@ class LaserScanVis:
     self.img_canvas.close()
     vispy.app.quit()
 
+
   def run(self):
     vispy.app.run()
+
+
+  def find_nearest_cls(self):
+    print(f"Search for class {self.selected_cls}...")
+    temp_scan = copy.deepcopy(self.gt_scan)
+    cnt = 0
+    if (self.total>1000):
+        msg = "It may search for a long time to complete.\
+Please do not close, move window or press other keys.\
+This progam use naive search and do not include blocking protection."
+        print(msg)
+    pbar = tqdm(total=self.total-1)
+    current_offset = self.offset
+
+    while cnt < self.total-1:
+      cnt += 1
+      current_offset = current_offset + 1
+      if current_offset >= self.total:
+          current_offset = 0
+      
+      # check gt
+      temp_scan.open_scan(self.scan_names[current_offset])
+      temp_scan.open_label(self.gt_label_names[current_offset])
+      temp_sem_label = temp_scan.sem_label
+      mask = (temp_sem_label == self.selected_cls)
+      if mask.sum() > 14:
+        self.offset = current_offset
+        break
+      
+      # check pred
+      temp_scan.open_label(self.pred_label_names[current_offset])
+      temp_sem_label = temp_scan.sem_label
+      mask = (temp_sem_label == self.selected_cls)
+      if mask.sum() > 14:
+        self.offset = current_offset
+        break
+      
+      pbar.update(1)
+    
+    del temp_scan, pbar
+    if cnt >= self.total-1:
+      print(f"No more scans with class {self.selected_cls}!")
+      return False
+    else:
+      return True
+    
+    
+    
+    
+    

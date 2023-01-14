@@ -17,6 +17,20 @@ $ python visualize_panoptic.py --dataset Path-to-Nuscenes-dataset --pkl_path pat
 --version [v1.0-trainval|v1.0-mini|v1.0-test] --do_instances
 ```
 
+e.g.
+For v1.0-trainval / v1.0-mini
+```sh
+$ python visualize_panoptic.py --dataset Path-to-Nuscenes-dataset --pkl_path path/nuscenes_pkl/trainval,mini \
+--version v1.0-trainval  --prediction path-to-predicted-npzfiles --do_instances --gt_classwise --pred_classwise
+```
+
+For v1.0-test
+```sh
+$ python visualize_panoptic.py --dataset Path-to-Nuscenes-dataset --pkl_path path/nuscenes_pkl/test \
+--version v1.0-trainval  --prediction path-to-predicted-npzfiles --do_instances --pred_classwise
+```
+
+
 
 # API for SemanticKITTI
 

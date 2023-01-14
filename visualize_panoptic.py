@@ -89,6 +89,20 @@ if __name__ == '__main__':
 		type=str,
 		help="For nuscenes, the directory to preprocessed pkl path file"
 	)
+
+	parser.add_argument(
+		'--gt_classwise',
+		dest='gt_classwise',
+		default=False,
+		action='store_true',
+		help='Visualize gt classwise')
+
+	parser.add_argument(
+		'--pred_classwise',
+		dest='pred_classwise',
+		default=False,
+		action='store_true',
+		help='Visualize pred classwise')
 	
 	FLAGS, unparsed = parser.parse_known_args()
 	
@@ -172,15 +186,17 @@ if __name__ == '__main__':
 			else:
 				gt_scan = None
 			if FLAGS.predictions is not None:
-				pred_scan = SemLaserScan(nclasses, color_dict, project=True, learning_map=CFG["learning_map"])
+				pred_scan = SemLaserScan(nclasses, color_dict, project=True, learning_map=None)
 			else:
 				pred_scan = None
 
 	# create a visualizer
 	gt_semantics = not FLAGS.ignore_semantics and (FLAGS.version != "v1.0-test")
 	gt_instances = gt_semantics and FLAGS.do_instances
+	gt_classwise = gt_semantics and gt_instances and FLAGS.gt_classwise
 	pred_semantics = not FLAGS.ignore_semantics and (FLAGS.predictions is not None)
 	pred_instances = pred_semantics and FLAGS.do_instances
+	pred_classwise = pred_semantics and pred_instances and FLAGS.pred_classwise
 
 	if gt_semantics:
 		gt_label_names = panoptic_gt_names
@@ -199,13 +215,15 @@ if __name__ == '__main__':
 						offset=0,
 						gt_semantics=gt_semantics, gt_instances=gt_instances,
 						pred_semantics=pred_semantics, pred_instances=pred_instances,
-						gt_classwise=False, pred_classwise=False)
+						gt_classwise=gt_classwise, pred_classwise=pred_classwise)
 
 	# print instructions
 	print("To navigate:")
 	print("\tb: back (previous scan)")
 	print("\tn: next (next scan)")
 	print("\tq: quit (exit program)")
+	print("\t1-9 and c-i: select class from 1-16")
+	print("\tp: proceed to search the nearest keyframe which contains the selected class")
 
 	# run the visualizer
 	vis.run()
