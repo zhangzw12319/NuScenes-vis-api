@@ -32,26 +32,62 @@ labels:
   30: 'static.vegetation'
   31: 'vehicle.ego'
 
-color_map_17: # bgr
-  0: [0, 0, 0]        # noise 黑色
-  1: [114, 128, 112]  # barrier 草灰色
-  2: [0, 255, 255]    # bicycle 黄色
-  3: [255, 204, 204]  # bus 淡紫色
-  4: [245, 150, 100]  # car 蓝色
-  5: [147, 163, 185]  # construction_vehicle 浅棕色
-  6: [0, 192, 255]    # motorcycle 橘色
-  7: [30, 30, 255]    # pedestrian 红色
-  8: [0, 204, 204]   # traffic_cone 锥形交通路标 深草绿色
-  9: [102, 255, 204]  # trailer 拖车 浅草绿色
-  10: [102, 153, 255] # truck 肉色
-  11: [255, 0, 255]   # driveable_surface 粉色
+# from https://github.com/nutonomy/nuscenes-devkit/blob/master/python-sdk/nuscenes/utils/color_map.py 
+classname_to_color: # Note, RGB
+  "noise": (0, 0, 0)  # Black.
+  "animal": (70, 130, 180)  # Steelblue
+  "human.pedestrian.adult": (0, 0, 230)  # Blue
+  "human.pedestrian.child": (135, 206, 235)  # Skyblue,
+  "human.pedestrian.construction_worker": (100, 149, 237)  # Cornflowerblue
+  "human.pedestrian.personal_mobility": (219, 112, 147)  # Palevioletred
+  "human.pedestrian.police_officer": (0, 0, 128)  # Navy,
+  "human.pedestrian.stroller": (240, 128, 128), # Lightcoral
+  "human.pedestrian.wheelchair": (138, 43, 226)  # Blueviolet
+  "movable_object.barrier": (112, 128, 144)  # Slategrey
+  "movable_object.debris": (210, 105, 30)  # Chocolate
+  "movable_object.pushable_pullable": (105, 105, 105)  # Dimgrey
+  "movable_object.trafficcone": (47, 79, 79)  # Darkslategrey
+  "static_object.bicycle_rack": (188, 143, (112, 128, 144))  # Rosybrown
+  "vehicle.bicycle": (220, 20, 60)  # Crimson
+  "vehicle.bus.bendy": (255, 127, 80)  # Coral
+  "vehicle.bus.rigid": (255, 69, 0)  # Orangered
+  "vehicle.car": (255, 158, 0)  # Orange
+  "vehicle.construction": (233, 150, 70)  # Darksalmon
+  "vehicle.emergency.ambulance": (255, 83, 0)
+  "vehicle.emergency.police": (255, 215, 0) # Gold
+  "vehicle.motorcycle": (255, 61, 99)  # Red
+  "vehicle.trailer": (255, 140, 0)  # Darkorange
+  "vehicle.truck": (255, 99, 71)  # Tomato
+  "flat.driveable_surface": (0, 207, 191)  # nuTonomy green
+  "flat.other": (175, 0, 75)
+  "flat.sidewalk": (75, 0, 75)
+  "flat.terrain": (112, 180, 60)
+  "static.manmade": (222, 184, 135)  # Burlywood
+  "static.other": (255, 228, 196)  # Bisque
+  "static.vegetation": (0, 175, 0)  # Green
+  "vehicle.ego": (255, 240, 245)
+
+color_map_17: # Note, BGR
+  0: [0, 0, 0]        # noise black
+  1: [144, 128, 112]  # barrier Slategrey
+  2: [60, 20, 220]    # bicycle Crimson
+  3: [0, 69, 255]  # bus Orangered
+  4: [0, 158, 255]  # car Orange
+  5: [70, 150, 233]  # construction_vehicle Darksalmon
+  6: [99, 61, 255]    # motorcycle Red
+  7: [230, 0, 0]    # pedestrian blue # buggy: multiple blue mapped to single for pedestrains
+  8: [79, 79, 47]   # traffic_cone Darkslategrey
+  9: [0, 140, 255]  # trailer Darkorange
+  10: [71, 99, 255] # truck Tomato
+  11: [191, 207, 0]   # driveable_surface nuTonomy green
   12: [75, 0, 175]    # other_flat 紫红色
-  13: [217, 217, 217] # sidewalk 浅灰色
-  14: [51, 102, 153]  # terrain 棕色
-  15: [160, 150, 96]  # manmade 深青绿色
-  16: [0, 175, 0]     # vegetation 深绿色
+  13: [75, 0, 75] #  sidewalk
+  14: [60, 180, 112]  # terrain
+  15: [135, 184, 222]  # manmade Burlywood
+  16: [0, 175, 0]     # vegetation Green 深绿色
 
 labels_17:
+  0: 'noise'
   1: 'barrier'
   2: 'bicycle'
   3: 'bus'
@@ -68,7 +104,7 @@ labels_17:
   14: 'terrain'
   15: 'manmade'
   16: 'vegetation'
-  17: 'noise'
+
 learning_map:
   1: 0
   5: 0
@@ -102,6 +138,27 @@ learning_map:
   27: 14
   28: 15
   30: 16
+
+inverse_learning_map:
+  0: 0
+  1: 9
+  2: 14
+  3: 15
+  3: 16
+  4: 17
+  5: 18
+  6: 21
+  7: 2
+  8: 12
+  9: 22
+  10: 23
+  11: 24
+  12: 25
+  13: 26
+  14: 27
+  15: 28
+  16: 30
+
 thing_class: # thing class in panoptic segmentation
   0: False      # "null areas"
   1: True     # "barrier"

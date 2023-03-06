@@ -50,8 +50,8 @@ if __name__ == '__main__':
 		type=str,
 		default=None,
 		required=False,
-		help='Alternate location for labels, to use predictions folder. '
-		'Must point to directory containing the predictions in the proper format '
+		help='use predictions folder and use semantic prediction labels as default'
+		'Must set path to directory containing the predictions in the proper format '
 		' (see readme)'
 		'Defaults to %(default)s',
 	)
@@ -103,6 +103,24 @@ if __name__ == '__main__':
 		default=False,
 		action='store_true',
 		help='Visualize pred classwise')
+ 
+	parser.add_argument(
+		'--render_lidar',
+		dest='render_lidar',
+		default=False,
+		action='store_true',
+		help='Render lidar point cloud to surrounding camrea images'
+	)
+ 
+	parser.add_argument(
+		'--dark_mode',
+		dest='dark_mode',
+		default=False,
+		action='store_true',
+		help='if set --dark_mode, the background of the image will be black'
+	) 
+ 
+
 	
 	FLAGS, unparsed = parser.parse_known_args()
 	
@@ -117,6 +135,10 @@ if __name__ == '__main__':
 	print("ignore_semantics", FLAGS.ignore_semantics)
 	print("do_instances", FLAGS.do_instances)
 	print("ignore_safety", FLAGS.ignore_safety)
+	print("pkl_path", FLAGS.pkl_path)
+	print("gt_classwise", FLAGS.gt_classwise)
+	print("render_lidar", FLAGS.render_lidar)
+	print("dark_mode", FLAGS.dark_mode)
 	print("*" * 80)
 	
 	
@@ -145,9 +167,21 @@ if __name__ == '__main__':
 	
 	# collect lidar token list and sort
 	sample_token_list = [entry["token"] for entry in nusc_infos]
+	scene_token_list = [nusc.get('sample', sample_token)["scene_token"] for sample_token in sample_token_list]
 	lidar_token_list = [nusc.get('sample', sample_token)['data']['LIDAR_TOP'] for sample_token in sample_token_list]
+ 		
 	# get lidar point file path
 	scan_names = [os.path.join(nusc.dataroot, nusc.get('sample_data', lidar_token)['filename'] ) for lidar_token in lidar_token_list]
+	
+    # get associated image token list
+	cam_list = [entry['cams'] for entry in nusc_infos]
+	# cam_front_left = [entry['cams']['CAM_FRONT_LEFT'] for entry in nusc_infos]
+	# cam_front = [entry['cams']['CAM_FRONT'] for entry in nusc_infos]
+	# cam_front_right = [entry['cams']['CAM_FRONT_RIGHT'] for entry in nusc_infos]
+	# cam_back_right = [entry['cams']['CAM_BACK_RIGHT'] for entry in nusc_infos]
+	# cam_back = [entry['cams']['CAM_BACK'] for entry in nusc_infos]
+	# cam_back_left = [entry['cams']['CAM_BACK_LEFT'] for entry in nusc_infos]
+    
 
 	# collect labels
 	if not FLAGS.ignore_semantics:
@@ -208,21 +242,28 @@ if __name__ == '__main__':
 		pred_label_names = None
 
 	
-	vis = LaserScanVis(raw_scan=raw_scan, gt_scan=gt_scan, pred_scan=pred_scan,
-						scan_names=scan_names,
+	vis = LaserScanVis(raw_scan=raw_scan, gt_scan=gt_scan, pred_scan=pred_scan, scan_names=scan_names,
+                    	scene_tokens=scene_token_list ,sample_tokens=sample_token_list, lidar_tokens=lidar_token_list,
 						gt_label_names=gt_label_names,
 						pred_label_names=pred_label_names,
+      					nusc=nusc, cam=cam_list,
 						offset=0,
 						gt_semantics=gt_semantics, gt_instances=gt_instances,
 						pred_semantics=pred_semantics, pred_instances=pred_instances,
-						gt_classwise=gt_classwise, pred_classwise=pred_classwise)
-
+						gt_classwise=gt_classwise, pred_classwise=pred_classwise,
+						render_lidar=FLAGS.render_lidar,
+      					dark_mode=FLAGS.dark_mode,
+          				cfg=CFG)
+ 
 	# print instructions
 	print("To navigate:")
 	print("\tb: back (previous scan)")
 	print("\tn: next (next scan)")
 	print("\tq: quit (exit program)")
 	print("\t1-9 and c-i: select class from 1-16")
+	print("\tr: render lidar to surrounding images with gt labels")
+	print("\ts: render lidar to surrounding images with pred labels")
+	print("\tt: print path and token infos")
 	print("\tp: proceed to search the nearest keyframe which contains the selected class")
 
 	# run the visualizer

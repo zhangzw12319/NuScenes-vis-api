@@ -1,10 +1,13 @@
 #!/usr/bin/env python3
 # This file is covered by the LICENSE file in the root of this project.
-
+import os
 import copy
 import vispy
-from vispy.scene import visuals, SceneCanvas
+import nuscenes
 import numpy as np
+
+
+from vispy.scene import visuals, SceneCanvas
 from matplotlib import pyplot as plt
 from tqdm import tqdm
 
@@ -19,14 +22,23 @@ class LaserScanVis:
     classwise: whether to show classwise predictions
   """
 
-  def __init__(self, raw_scan, gt_scan, pred_scan, scan_names, gt_label_names, pred_label_names,
+  def __init__(self, raw_scan, gt_scan, pred_scan, scan_names,
+               lidar_tokens, sample_tokens, scene_tokens,
+               gt_label_names, pred_label_names,
+               nusc, cam,
                offset=0, gt_semantics=True, gt_instances=False,
                pred_semantics=False, pred_instances=False,
-               gt_classwise=False, pred_classwise=False):
+               gt_classwise=False, pred_classwise=False,
+               render_lidar=False,
+               dark_mode=False,
+               cfg=None):
     self.raw_scan = raw_scan
     self.gt_scan = gt_scan
     self.pred_scan = pred_scan
     self.scan_names = scan_names
+    self.lidar_tokens = lidar_tokens
+    self.sample_tokens = sample_tokens
+    self.scene_tokens = scene_tokens
 
     self.gt_label_names = gt_label_names
     self.pred_label_names = pred_label_names
@@ -39,6 +51,22 @@ class LaserScanVis:
     self.pred_instances = pred_instances
     self.gt_classwise = gt_classwise
     self.pred_classwise = pred_classwise
+    
+    self.nusc = nusc
+    self.cam = cam
+    self.render_lidar = render_lidar
+    self.cfg = cfg
+    
+    if self.cfg != None:
+      self.inv_learning_map = self.cfg["inverse_learning_map"]
+    
+    
+    # color setting
+    self.border_color = [1.0, 1.0, 1.0, 1.0]
+    if dark_mode:
+      self.bg_color = [0.0, 0.0, 0.0, 1.0]
+    else:
+      self.bg_color = [1.0, 1.0, 1.0, 1.0]
     
     self.selected_cls = 4
 
@@ -72,7 +100,7 @@ class LaserScanVis:
 
     # laserscan part
     self.scan_view = vispy.scene.widgets.ViewBox(
-        border_color='white', parent=self.canvas.scene)
+        border_color=self.border_color, bgcolor=self.bg_color, parent=self.canvas.scene)
     self.grid.add_widget(self.scan_view, 0, 0)
     self.scan_vis = visuals.Markers()
     self.scan_view.camera = 'turntable'
@@ -83,7 +111,7 @@ class LaserScanVis:
     if (self.gt_semantics) and (self.gt_label_names is not None):
       print("Using semantics in visualizer")
       self.sem_view = vispy.scene.widgets.ViewBox(
-          border_color='white', parent=self.canvas.scene)
+          border_color=self.border_color, bgcolor=self.bg_color, parent=self.canvas.scene)
       self.grid.add_widget(self.sem_view, 0, 1)
       self.sem_vis = visuals.Markers()
       self.sem_view.camera = 'turntable'
@@ -94,7 +122,7 @@ class LaserScanVis:
     if (self.gt_instances) and (self.gt_label_names is not None):
       print("Using instances in visualizer")
       self.inst_view = vispy.scene.widgets.ViewBox(
-          border_color='white', parent=self.canvas.scene)
+          border_color=self.border_color, bgcolor=self.bg_color, parent=self.canvas.scene)
       self.grid.add_widget(self.inst_view, 0, 2)
       self.inst_vis = visuals.Markers()
       self.inst_view.camera = 'turntable'
@@ -106,7 +134,7 @@ class LaserScanVis:
     if (self.pred_semantics) and (self.pred_label_names is not None):
       print("Using predicted semantics in visualizer")
       self.pred_sem_view = vispy.scene.widgets.ViewBox(
-          border_color='white', parent=self.canvas.scene)
+          border_color=self.border_color, bgcolor=self.bg_color, parent=self.canvas.scene)
       self.grid.add_widget(self.pred_sem_view, 1, 1)
       self.pred_sem_vis = visuals.Markers()
       self.pred_sem_view.camera = 'turntable'
@@ -117,13 +145,14 @@ class LaserScanVis:
     if (self.pred_instances) and (self.pred_label_names is not None):
       print("Using predicted instances in visualizer")
       self.pred_inst_view = vispy.scene.widgets.ViewBox(
-          border_color='white', parent=self.canvas.scene)
+          border_color='white', bgcolor=self.bg_color, parent=self.canvas.scene)
       self.grid.add_widget(self.pred_inst_view, 1, 2)
       self.pred_inst_vis = visuals.Markers()
       self.pred_inst_view.camera = 'turntable'
       self.pred_inst_view.add(self.pred_inst_vis)
       visuals.XYZAxis(parent=self.pred_inst_view.scene)
       # self.pred_inst_view.camera.link(self.scan_view.camera)
+      
 
     ###############################################################
 
@@ -138,7 +167,7 @@ class LaserScanVis:
     # gt classwise
     if self.gt_classwise:
       self.gt_cls_view = vispy.scene.widgets.ViewBox(
-          border_color='white', parent=self.canvas2.scene)
+          border_color=self.border_color, bgcolor=self.bg_color, parent=self.canvas2.scene)
       self.grid2.add_widget(self.gt_cls_view, 0, 0)
       self.gt_cls_vis = visuals.Markers()
       self.gt_cls_view.camera = 'turntable'
@@ -148,7 +177,7 @@ class LaserScanVis:
     # pred classwise
     if self.pred_classwise:
       self.pred_cls_view = vispy.scene.widgets.ViewBox(
-          border_color='white', parent=self.canvas2.scene)
+          border_color=self.border_color, bgcolor=self.bg_color, parent=self.canvas2.scene)
       self.grid2.add_widget(self.pred_cls_view, 0, 1)
       self.pred_cls_vis = visuals.Markers()
       self.pred_cls_view.camera = 'turntable'
@@ -177,7 +206,7 @@ class LaserScanVis:
 
     # add a view for the depth
     self.img_view = vispy.scene.widgets.ViewBox(
-        border_color='white', parent=self.img_canvas.scene)
+        border_color=self.border_color, bgcolor=self.bg_color, parent=self.img_canvas.scene)
     self.img_grid.add_widget(self.img_view, 0, 0)
     self.img_vis = visuals.Image(cmap='viridis')
     self.img_view.add(self.img_vis)
@@ -185,7 +214,7 @@ class LaserScanVis:
     # add ground-truth semantics
     if (self.gt_semantics) and (self.gt_label_names is not None):
       self.sem_img_view = vispy.scene.widgets.ViewBox(
-          border_color='white', parent=self.img_canvas.scene)
+          border_color=self.border_color, bgcolor=self.bg_color, parent=self.img_canvas.scene)
       self.img_grid.add_widget(self.sem_img_view, 1, 0)
       self.sem_img_vis = visuals.Image(cmap='viridis')
       self.sem_img_view.add(self.sem_img_vis)
@@ -193,7 +222,7 @@ class LaserScanVis:
     # add ground-truth instances
     if (self.gt_instances) and (self.gt_label_names is not None):
       self.inst_img_view = vispy.scene.widgets.ViewBox(
-          border_color='white', parent=self.img_canvas.scene)
+          border_color=self.border_color, bgcolor=self.bg_color, parent=self.img_canvas.scene)
       self.img_grid.add_widget(self.inst_img_view, 2, 0)
       self.inst_img_vis = visuals.Image(cmap='viridis')
       self.inst_img_view.add(self.inst_img_vis)
@@ -268,6 +297,7 @@ class LaserScanVis:
       # self.gt_scan.open_scan(self.scan_names[self.offset])
       # self.gt_scan.open_label(self.gt_label_names[self.offset])
       # self.gt_scan.colorize() 
+      print("gt_classwise!")
       mask = (self.gt_scan.sem_label == self.selected_cls)
       # print("self.selected_cls", self.selected_cls)
       # we have limited self.selected_cls range in def key_press
@@ -348,6 +378,82 @@ class LaserScanVis:
       self.inst_img_vis.set_data(self.gt_scan.proj_inst_color[..., ::-1])
       self.inst_img_vis.update()
 
+  # from https://github.com/nutonomy/nuscenes-devkit/blob/master/python-sdk/tutorials/nuscenes_lidarseg_panoptic_tutorial.ipynb
+  def rendar_lidar_to_img_gt(self):
+    flag = False
+    if (self.render_lidar) and (type(self.nusc) == nuscenes.NuScenes):
+      # render the sequence of scenes as video clip
+  #         self.nusc.render_scene_channel_lidarseg(self.scene_tokens[self.offset], 
+  #                                    'CAM_BACK', 
+  # #                                    filter_lidarseg_labels=[18, 24, 28],
+  #                                    verbose=True, 
+  #                                    dpi=100,
+  #                                    imsize=(1280, 720),
+  #                                    render_mode='image',
+  #                                    show_panoptic=True)
+      # render gt
+      self.nusc.render_sample(self.sample_tokens[self.offset], 
+#                               filter_lidarseg_labels=[18, 24, 28],
+                                # verbose=True, 
+                                show_lidarseg=True,
+                                show_panoptic=False)
+      flag = True
+      print("Token List", self.sample_tokens[self.offset])
+
+    return flag
+  
+  
+  def rendar_lidar_to_img_preds(self):
+    flag = False
+    if (self.render_lidar) and (type(self.nusc) == nuscenes.NuScenes):
+      # render the sequence of scenes as video clip
+  #         self.nusc.render_scene_channel_lidarseg(self.scene_tokens[self.offset], 
+  #                                    'CAM_BACK', 
+  # #                                    filter_lidarseg_labels=[18, 24, 28],
+  #                                    verbose=True, 
+  #                                    dpi=100,
+  #                                    imsize=(1280, 720),
+  #                                    render_mode='image',
+  #                                    show_panoptic=True)
+      # render pred
+      if (self.pred_semantics):
+        
+        filepath_tmp = self.pred_label_names[self.offset]
+        if not os.path.exists(filepath_tmp.replace(".npz", "_original_lidarseg.npz")):
+          print("Converting...")
+          pred_label = np.load(filepath_tmp)['data'].reshape((-1))
+          print(pred_label)
+          print(pred_label.max())
+          original_pred_labels = np.vectorize(self.inv_learning_map.__getitem__)(pred_label // 1000)
+          pred_label = original_pred_labels
+          filepath_tmp = filepath_tmp.replace("c.npz", "_original.npz")
+          # points_label = np.fromfile(lidarseg_labels_filename, dtype=np.uint8)  # [num_points] in nuscenes lidarseg implementation
+          pred_label.astype(np.uint8).tofile(filepath_tmp)
+          print("Converting Complete! Saved to: ", filepath_tmp)
+        else:
+          filepath_tmp = filepath_tmp.replace(".npz", "_original_lidarseg.npz")
+          print("Directing to: ", filepath_tmp)
+        
+        self.nusc.render_sample(self.sample_tokens[self.offset], 
+  #                             filter_lidarseg_labels=[18, 24, 28],
+                                lidarseg_preds_bin_path=filepath_tmp,
+                                # verbose=True, 
+                                show_lidarseg=True,
+                                show_panoptic=False)
+        flag = True
+        print("Token List", self.sample_tokens[self.offset])
+    return flag
+    
+    
+  def print_path_info(self):
+    print("LiDAR_PATH:", self.scan_names[self.offset])
+    cam_order = ["CAM_FRONT", "CAM_FRONT_RIGHT", "CAM_BACK_RIGHT", "CAM_BACK", "CAM_BACK_LEFT", "CAM_FRONT_LEFT"]
+    for cam_view in cam_order:
+      cam_token = self.cam[self.offset][cam_view]["sample_data_token"]
+      cam_path = self.nusc.get("sample_data", cam_token)["filename"]
+      print(cam_view + ": " + cam_token + "\t" + cam_path)
+    print()
+
 
   # interface
   def key_press(self, event):
@@ -373,6 +479,20 @@ class LaserScanVis:
       self.selected_cls = ord(str(event.key)[6]) - ord('C') + 10
       self.update_scan()
       print(f"You select class {self.selected_cls}...")
+    elif event.key == 'R':
+      flag = self.rendar_lidar_to_img_gt()
+      if flag:
+        print("Successfully Rendered gt!")
+      else:
+        print("Please set --render_lidar; if render preds fo not set --ignore_semantics; if render panoptic please further set --pred_instances ")
+    elif event.key == 'S':
+      flag = self.rendar_lidar_to_img_preds()
+      if flag:
+        print("Successfully Rendered preds!")
+      else:
+        print("Please set --render_lidar; if render preds fo not set --ignore_semantics; if render panoptic please further set --pred_instances ")
+    elif event.key == 'T':
+      self.print_path_info()
     elif event.key == 'P':
       if self.find_nearest_cls():
         self.update_scan()
@@ -426,12 +546,13 @@ This progam use naive search and do not include blocking protection."
         break
       
       # check pred
-      temp_scan.open_label(self.pred_label_names[current_offset])
-      temp_sem_label = temp_scan.sem_label
-      mask = (temp_sem_label == self.selected_cls)
-      if mask.sum() > 14:
-        self.offset = current_offset
-        break
+      if self.pred_semantics:
+        temp_scan.open_label(self.pred_label_names[current_offset])
+        temp_sem_label = temp_scan.sem_label
+        mask = (temp_sem_label == self.selected_cls)
+        if mask.sum() > 14:
+          self.offset = current_offset
+          break
       
       pbar.update(1)
     
