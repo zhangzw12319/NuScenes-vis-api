@@ -668,9 +668,9 @@ This progam use naive search and do not include blocking protection."
 
     print('*'*20)
     print("Mouse Movement:")
-    print("Scroll/Right mouse button: zoom in/out")
-    print("Left mouse button: rotates the view around its center point")
-    print("Shift + Left mouse button: Shifting")
+    print("\tScroll/Right mouse button: zoom in/out")
+    print("\tLeft mouse button: rotates the view around its center point")
+    print("\tShift + Left mouse button: Shifting")
     print("\to: reset camera view")
     print('*'*20)
 
