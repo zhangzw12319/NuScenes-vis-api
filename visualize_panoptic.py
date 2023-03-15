@@ -40,7 +40,7 @@ if __name__ == '__main__':
 	  '--split', '-s',
 	  type=str,
 	  default="val",
-	  required=True,
+	  required=False,
 	  help="train or validation set",
 	  choices=["train", "val"]
 	)
@@ -254,17 +254,6 @@ if __name__ == '__main__':
 						render_lidar=FLAGS.render_lidar,
       					dark_mode=FLAGS.dark_mode,
           				cfg=CFG)
- 
-	# print instructions
-	print("To navigate:")
-	print("\tb: back (previous scan)")
-	print("\tn: next (next scan)")
-	print("\tq: quit (exit program)")
-	print("\t1-9 and c-i: select class from 1-16")
-	print("\tr: render lidar to surrounding images with gt labels")
-	print("\ts: render lidar to surrounding images with pred labels")
-	print("\tt: print path and token infos")
-	print("\tp: proceed to search the nearest keyframe which contains the selected class")
 
 	# run the visualizer
 	vis.run()

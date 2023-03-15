@@ -79,6 +79,8 @@ class LaserScanVis:
       print("Instances are only allowed in when semantics=True")
       raise ValueError
 
+    self.point_size = 3
+    self.print_help()
     self.reset()
     self.update_scan()
 
@@ -87,6 +89,8 @@ class LaserScanVis:
     # last key press (it should have a mutex, but visualization is not
     # safety critical, so let's do things wrong)
     self.action = "no"  # no, next, back, quit are the possibilities
+    self.view_list = []
+    self.linked = False
 
     ###############################################################
 
@@ -106,6 +110,7 @@ class LaserScanVis:
     self.scan_view.camera = 'turntable'
     self.scan_view.add(self.scan_vis)
     visuals.XYZAxis(parent=self.scan_view.scene)
+    self.view_list.append(self.scan_view)
     
     # add ground-truth point visualization
     if (self.gt_semantics) and (self.gt_label_names is not None):
@@ -117,7 +122,7 @@ class LaserScanVis:
       self.sem_view.camera = 'turntable'
       self.sem_view.add(self.sem_vis)
       visuals.XYZAxis(parent=self.sem_view.scene)
-      # self.sem_view.camera.link(self.scan_view.camera)
+      self.view_list.append(self.sem_view)
 
     if (self.gt_instances) and (self.gt_label_names is not None):
       print("Using instances in visualizer")
@@ -128,7 +133,7 @@ class LaserScanVis:
       self.inst_view.camera = 'turntable'
       self.inst_view.add(self.inst_vis)
       visuals.XYZAxis(parent=self.inst_view.scene)
-      # self.inst_view.camera.link(self.scan_view.camera)
+      self.view_list.append(self.inst_view)
 
     # add predicted point visualization
     if (self.pred_semantics) and (self.pred_label_names is not None):
@@ -140,7 +145,7 @@ class LaserScanVis:
       self.pred_sem_view.camera = 'turntable'
       self.pred_sem_view.add(self.pred_sem_vis)
       visuals.XYZAxis(parent=self.pred_sem_view.scene)
-      # self.pred_sem_view.camera.link(self.scan_view.camera)    
+      self.view_list.append(self.pred_sem_view)    
    
     if (self.pred_instances) and (self.pred_label_names is not None):
       print("Using predicted instances in visualizer")
@@ -151,7 +156,7 @@ class LaserScanVis:
       self.pred_inst_view.camera = 'turntable'
       self.pred_inst_view.add(self.pred_inst_vis)
       visuals.XYZAxis(parent=self.pred_inst_view.scene)
-      # self.pred_inst_view.camera.link(self.scan_view.camera)
+      self.view_list.append(self.pred_inst_view)
       
 
     ###############################################################
@@ -173,6 +178,7 @@ class LaserScanVis:
       self.gt_cls_view.camera = 'turntable'
       self.gt_cls_view.add(self.gt_cls_vis)
       visuals.XYZAxis(parent=self.gt_cls_view.scene)
+      self.view_list.append(self.gt_cls_view)
     
     # pred classwise
     if self.pred_classwise:
@@ -183,6 +189,7 @@ class LaserScanVis:
       self.pred_cls_view.camera = 'turntable'
       self.pred_cls_view.add(self.pred_cls_vis)
       visuals.XYZAxis(parent=self.pred_cls_view.scene)
+      self.view_list.append(self.pred_cls_view)
 
     ###############################################################
 
@@ -228,13 +235,26 @@ class LaserScanVis:
       self.inst_img_view.add(self.inst_img_vis)
       
     
-    # new canvas for multi-view img
-    # self.multiview_multiplier = 1
-    # self.multiview_canvas_W = 600
-    # self.multiview_canvas_H = 300
+    # init options of rendering lidar
+    self.set_show_panoptic(True)
+    self.set_filtering()
+  
+  
+  def link_cameras(self):
+    self.linked = True
+    if len(self.view_list)>1:
+      for view in self.view_list[1:]:
+        self.view_list[0].camera.link(view.camera)
     
-    # self.multi_img_canvas = SceneCanvas(keys='interactive', show=True,
-    #                               size=(self.canvas_W * 3, (self.canvas_H * 2) * self.multiplier))
+  # def unlink_cameras(self):
+  #   self.linked = False
+  #   if len(self.view_list)>1:
+  #     for view in self.view_list[1:]:
+  #       self.view_list[0].camera.unlink(view.camera)
+  
+  def reset_camera_view(self):
+    for view in self.view_list:
+      view.camera.reset()
     
 
   def get_mpl_colormap(self, cmap_name):
@@ -264,13 +284,13 @@ class LaserScanVis:
       self.sem_vis.set_data(self.gt_scan.points,
                             face_color=self.gt_scan.sem_label_color[..., ::-1],
                             edge_color=self.gt_scan.sem_label_color[..., ::-1],
-                            size=1)
+                            size=self.point_size)
       # plot instances
       if self.gt_instances:
         self.inst_vis.set_data(self.gt_scan.points,
                               face_color=self.gt_scan.inst_label_color[..., ::-1],
                               edge_color=self.gt_scan.inst_label_color[..., ::-1],
-                              size=1)
+                              size=self.point_size)
 
     ###############################################################
 
@@ -283,12 +303,12 @@ class LaserScanVis:
       self.pred_sem_vis.set_data(self.pred_scan.points,
                             face_color=self.pred_scan.sem_label_color[..., ::-1],
                             edge_color=self.pred_scan.sem_label_color[..., ::-1],
-                            size=1)
+                            size=self.point_size)
       if self.pred_instances:
         self.pred_inst_vis.set_data(self.pred_scan.points,
                               face_color=self.pred_scan.inst_label_color[..., ::-1],
                               edge_color=self.pred_scan.inst_label_color[..., ::-1],
-                              size=1)
+                              size=self.point_size)
     ###############################################################
 
     if self.gt_classwise:
@@ -310,7 +330,7 @@ class LaserScanVis:
       self.gt_cls_vis.set_data(self.gt_scan.points,
                           face_color=gt_cls_color[..., ::-1],
                           edge_color=gt_cls_color[..., ::-1],
-                          size=1)
+                          size=self.point_size)
       
     if self.pred_classwise:
       # can be commented out here to save time
@@ -328,7 +348,7 @@ class LaserScanVis:
       self.pred_cls_vis.set_data(self.pred_scan.points,
                           face_color=pred_cls_color[..., ::-1],
                           edge_color=pred_cls_color[..., ::-1],
-                          size=1)
+                          size=self.point_size)
 
     ###############################################################
     # then change names
@@ -355,7 +375,7 @@ class LaserScanVis:
     self.scan_vis.set_data(self.raw_scan.points,
                            face_color=viridis_colors[..., ::-1],
                            edge_color=viridis_colors[..., ::-1],
-                           size=1)
+                           size=self.point_size)
 
     # now do all the range image stuff
     # plot range image
@@ -377,9 +397,21 @@ class LaserScanVis:
     if self.gt_instances:
       self.inst_img_vis.set_data(self.gt_scan.proj_inst_color[..., ::-1])
       self.inst_img_vis.update()
+  
+  def set_show_panoptic(self, allow=False):
+    self.show_panoptic = allow
+    self.show_lidarseg = not allow
+    
+  def set_filtering(self, array=None):
+    assert (array is None) or (type(array) == list) and len(array) > 0
+    if array is None:
+      self.filtering_list = array
+    else:
+      self.filtering_list = np.vectorize(self.inv_learning_map.__getitem__)(array)
+    
 
   # from https://github.com/nutonomy/nuscenes-devkit/blob/master/python-sdk/tutorials/nuscenes_lidarseg_panoptic_tutorial.ipynb
-  def rendar_lidar_to_img_gt(self):
+  def render_lidar_to_img_gt(self):
     flag = False
     if (self.render_lidar) and (type(self.nusc) == nuscenes.NuScenes):
       # render the sequence of scenes as video clip
@@ -393,17 +425,17 @@ class LaserScanVis:
   #                                    show_panoptic=True)
       # render gt
       self.nusc.render_sample(self.sample_tokens[self.offset], 
-#                               filter_lidarseg_labels=[18, 24, 28],
+                              filter_lidarseg_labels=self.filtering_list,
                                 # verbose=True, 
-                                show_lidarseg=True,
-                                show_panoptic=False)
+                                show_lidarseg=self.show_lidarseg,
+                                show_panoptic=self.show_panoptic)
       flag = True
-      print("Token List", self.sample_tokens[self.offset])
+      # print("Token List", self.sample_tokens[self.offset])
 
     return flag
   
   
-  def rendar_lidar_to_img_preds(self):
+  def render_lidar_to_img_preds(self):
     flag = False
     if (self.render_lidar) and (type(self.nusc) == nuscenes.NuScenes):
       # render the sequence of scenes as video clip
@@ -417,31 +449,37 @@ class LaserScanVis:
   #                                    show_panoptic=True)
       # render pred
       if (self.pred_semantics):
-        
         filepath_tmp = self.pred_label_names[self.offset]
-        if not os.path.exists(filepath_tmp.replace(".npz", "_original_lidarseg.npz")):
+        if self.show_lidarseg:
+          suffix = "_original_lidarseg.bin"
+        else:
+          suffix = "_original_panoptic.npz"
+        if not os.path.exists(filepath_tmp.replace(".npz", suffix)):
           print("Converting...")
           pred_label = np.load(filepath_tmp)['data'].reshape((-1))
           print(pred_label)
           print(pred_label.max())
-          original_pred_labels = np.vectorize(self.inv_learning_map.__getitem__)(pred_label // 1000)
-          pred_label = original_pred_labels
-          filepath_tmp = filepath_tmp.replace("c.npz", "_original.npz")
-          # points_label = np.fromfile(lidarseg_labels_filename, dtype=np.uint8)  # [num_points] in nuscenes lidarseg implementation
-          pred_label.astype(np.uint8).tofile(filepath_tmp)
+          original_pred_sems = np.vectorize(self.inv_learning_map.__getitem__)(pred_label // 1000)
+          filepath_tmp = filepath_tmp.replace(".npz", suffix)
+          if self.show_lidarseg:
+            original_pred_sems.astype(np.uint8).tofile(filepath_tmp)
+          else:
+            original_pred_pano = original_pred_sems * 1000 + pred_label % 1000
+            np.savez_compressed(filepath_tmp, data=original_pred_pano.astype(np.uint16))
+            
           print("Converting Complete! Saved to: ", filepath_tmp)
         else:
-          filepath_tmp = filepath_tmp.replace(".npz", "_original_lidarseg.npz")
+          filepath_tmp = filepath_tmp.replace(".npz", suffix)
           print("Directing to: ", filepath_tmp)
         
         self.nusc.render_sample(self.sample_tokens[self.offset], 
-  #                             filter_lidarseg_labels=[18, 24, 28],
+                              filter_lidarseg_labels=self.filtering_list,
                                 lidarseg_preds_bin_path=filepath_tmp,
                                 # verbose=True, 
-                                show_lidarseg=True,
-                                show_panoptic=False)
+                                show_lidarseg=self.show_lidarseg,
+                                show_panoptic=self.show_panoptic)
         flag = True
-        print("Token List", self.sample_tokens[self.offset])
+        # print("Token List", self.sample_tokens[self.offset])
     return flag
     
     
@@ -464,39 +502,80 @@ class LaserScanVis:
       if self.offset >= self.total:
         self.offset = 0
       self.update_scan()
+
     elif event.key == 'B':
       self.offset -= 1
       if self.offset < 0:
         self.offset = self.total - 1
       self.update_scan()
+
     elif event.key == 'Q' or event.key == 'Escape':
       self.destroy()
+      exit()
+
     elif event.key in ['1','2','3','4','5','6','7','8','9']:
       self.selected_cls = int(str(event.key)[6])
       self.update_scan()
+      self.set_filtering([self.selected_cls])
       print(f"You select class {self.selected_cls}...")
+
     elif event.key in ['C','D','E','F','G','H','I']:
       self.selected_cls = ord(str(event.key)[6]) - ord('C') + 10
       self.update_scan()
       print(f"You select class {self.selected_cls}...")
-    elif event.key == 'R':
-      flag = self.rendar_lidar_to_img_gt()
-      if flag:
-        print("Successfully Rendered gt!")
-      else:
-        print("Please set --render_lidar; if render preds fo not set --ignore_semantics; if render panoptic please further set --pred_instances ")
-    elif event.key == 'S':
-      flag = self.rendar_lidar_to_img_preds()
-      if flag:
-        print("Successfully Rendered preds!")
-      else:
-        print("Please set --render_lidar; if render preds fo not set --ignore_semantics; if render panoptic please further set --pred_instances ")
-    elif event.key == 'T':
-      self.print_path_info()
+
+    elif event.key == 'L':
+      if not self.linked:
+        self.link_cameras()
+        print("Linking Cameras!")
+      # else:
+      #   self.unlink_cameras()
+      #   print("Unlinking Cameras!")
+    
+    elif event.key == 'O':
+      self.reset_camera_view()
+
     elif event.key == 'P':
       if self.find_nearest_cls():
         self.update_scan()
         print(f"You select class {self.selected_cls}...")
+
+    elif event.key == 'R':
+      flag = self.render_lidar_to_img_gt()
+      if flag:
+        print("Successfully Rendered gt!")
+      else:
+        print("Please set --render_lidar ")
+
+    elif event.key == 'S':
+      flag = self.render_lidar_to_img_preds()
+      if flag:
+        print("Successfully Rendered preds!")
+      else:
+        print("Please check that you have set --render_lidar and --pred_semantics, and then have provided predictions by --predictions path_to_prediction_folder.")
+  
+    elif event.key == 'T':
+      self.print_path_info()
+
+    elif event.key == 'U':
+      self.set_show_panoptic(not self.show_panoptic)
+      if self.show_lidarseg:
+        print("Switch *on* show_lidarseg and switch *off* show_panoptic in rendering mode!")
+      else:
+        print("Switch *off* show_lidarseg and switch *on* show_panoptic in rendering mode!")
+
+    elif event.key == 'V':
+      if self.filtering_list is None:
+        self.set_filtering([self.selected_cls])
+        print("Switch *on* filtering list in rendering mode")
+      else:
+        self.filtering_list = None
+        print("Switch *off* filtering in rendering mode")
+
+    elif event.key == 'M':
+        self.print_help()
+    else:
+      pass
 
   def draw(self, event):
     if self.canvas.events.key_press.blocked():
@@ -520,7 +599,13 @@ class LaserScanVis:
 
   def find_nearest_cls(self):
     print(f"Search for class {self.selected_cls}...")
-    temp_scan = copy.deepcopy(self.gt_scan)
+    if self.gt_semantics:
+      temp_scan = copy.deepcopy(self.gt_scan)
+    elif self.pred_semantics:
+      temp_scan = copy.deepcopy(self.pred_scan)
+    else:
+      assert False, "Please set --gt_semantics or --pred_semantics"
+
     cnt = 0
     if (self.total>1000):
         msg = "It may search for a long time to complete.\
@@ -535,15 +620,16 @@ This progam use naive search and do not include blocking protection."
       current_offset = current_offset + 1
       if current_offset >= self.total:
           current_offset = 0
-      
-      # check gt
+
       temp_scan.open_scan(self.scan_names[current_offset])
-      temp_scan.open_label(self.gt_label_names[current_offset])
-      temp_sem_label = temp_scan.sem_label
-      mask = (temp_sem_label == self.selected_cls)
-      if mask.sum() > 14:
-        self.offset = current_offset
-        break
+      # check gt
+      if self.gt_semantics:
+        temp_scan.open_label(self.gt_label_names[current_offset])
+        temp_sem_label = temp_scan.sem_label
+        mask = (temp_sem_label == self.selected_cls)
+        if mask.sum() > 14:
+          self.offset = current_offset
+          break
       
       # check pred
       if self.pred_semantics:
@@ -562,8 +648,34 @@ This progam use naive search and do not include blocking protection."
       return False
     else:
       return True
-    
-    
-    
-    
-    
+  
+  def print_help(self):
+    # print instructions
+    print('*'*20)
+    print("To navigate:")
+    print("\tb: back (previous scan)")
+    print("\tn: next (next scan)")
+    print("\tq: quit (exit program)")
+    print("\t1-9 and c-i: select class from 1-16")
+    print("\tp: proceed to search the nearest keyframe which contains the selected class")
+
+    print('*'*20)
+    print("To render into surrounding cameras:")
+    print("\tr: render lidar to surrounding images with gt labels")
+    print("\ts: render lidar to surrounding images with pred labels")
+    print("\tu: Switch show_lidarseg (reverse show_panoptic) in rendering mode!")
+    print("\tv: Switch filtering list in rendering mode")
+
+    print('*'*20)
+    print("Mouse Movement:")
+    print("Scroll/Right mouse button: zoom in/out")
+    print("Left mouse button: rotates the view around its center point")
+    print("Shift + Left mouse button: Shifting")
+    print("\to: reset camera view")
+    print('*'*20)
+
+    print("Other Functions:")
+    print("\tt: print path and token infos")
+    print("\tl: link cameras")
+    print("\tm: print help message")
+    print()

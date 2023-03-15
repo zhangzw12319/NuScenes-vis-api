@@ -23,13 +23,13 @@ e.g.
 For v1.0-trainval / v1.0-mini
 ```sh
 $ python visualize_panoptic.py --dataset Path-to-Nuscenes-dataset --pkl_path path/nuscenes_pkl/trainval,mini \
---version v1.0-trainval  --prediction path-to-predicted-npzfiles --do_instances --gt_classwise --pred_classwise
+--version v1.0-trainval  --prediction path-to-predicted-npzfiles --do_instances --gt_classwise --pred_classwise --render_lidar
 ```
 
 For v1.0-test
 ```sh
 $ python visualize_panoptic.py --dataset Path-to-Nuscenes-dataset --pkl_path path/nuscenes_pkl/test \
---version v1.0-trainval  --prediction path-to-predicted-npzfiles --do_instances --pred_classwise
+--version v1.0-trainval  --prediction path-to-predicted-npzfiles --do_instances --pred_classwise --render_lidar
 ```
 
 
@@ -43,7 +43,7 @@ Lidarseg:
 
 Panoptic:
 
-- Support additionally visualizing pure *Thing* instances and making comparision between ground-truth and panoptic segmentation `--`
+- Support additionally visualizing pure *Thing* instances and making comparision between ground-truth and panoptic segmentation
 
 Range Projections:
 
@@ -56,13 +56,15 @@ Common:
 - Support searching the nearest frame filtered by single class by pressing `P`
 - Support printing token and path information by pressing `T`
 - use help by `python visiualize_panoptic.py -h`
+- Support link different cameras across view together for synchronizations.
 
 2D Rendering(`--render_lidar`):
 
-- Support rendering LiDAR point cloud to surrounding cameras, with lidarseg or panoptic label, ground-truth or predictions (may have bugs occasionally).
+- Support rendering LiDAR point cloud to surrounding cameras, with lidarseg or panoptic ground-truth labels or prediction labels.
+
 - TODO: Can be easily extended to 2D video visualization of scenary, bird-eye-view visualization. Read nuscenes-devkit tutorial(https://github.com/nutonomy/nuscenes-devkit/blob/master/python-sdk/tutorials/nuscenes_lidarseg_panoptic_tutorial.ipynb) and make simple changes in `auxiliary/lasercanvis.py`.
 
-
+You can refer to instructions by pressing `M` keys.
 
 ## Notes
 
